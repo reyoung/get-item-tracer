@@ -11,10 +11,7 @@ def monkey_patch_getitem(obj, label, trace_list):
             ret_val = prev_get_item(k)
             return monkey_patch_getitem(ret_val, new_label, trace_list)
 
-        prev_set_item = obj.__setitem__
-
-        def new_set_item(k, v):
-            return prev_set_item(k, v)
+        prev_set_item = getattr(obj, "__setitem__", None)
 
         try:
             setattr(obj, "__getitem__", new_get_item)
@@ -23,9 +20,9 @@ def monkey_patch_getitem(obj, label, trace_list):
                 def __getitem__(self, item):
                     return new_get_item(item)
 
-                if hasattr(obj, "__setitem__"):
+                if prev_set_item is not None:
                     def __setitem__(self, key, value):
-                        return new_set_item(key, value)
+                        return prev_set_item(key, value)
 
                 def __init__(self):
                     for key in filter(lambda x: x not in ["__getitem__", "__setitem__"], dir(obj)):
